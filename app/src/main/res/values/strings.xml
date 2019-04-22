@@ -1,5 +1,5 @@
 <resources>
 	<string name="app_name">Watercard</string>
 	<string name="tos">By checking this box, you know and agree that this APP comes with ABSOLUTELY NO WARRANTY, and any consequences arising out of the use of this APP shall be borne by yourself and shall be independent of the APP producer.</string>
-	<string name="tip">* Put the watercard near the NFC receiver of you phone.</string>
+	<string name="tip">* Put the watercard near the NFC receiver of your phone.</string>
 </resources>
