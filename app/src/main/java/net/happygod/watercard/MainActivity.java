@@ -1,16 +1,12 @@
 package net.happygod.watercard;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
-
-import android.app.Activity;
-import android.app.PendingIntent;
-import android.content.Intent;
-import android.nfc.NfcAdapter;
-import android.nfc.Tag;
-import android.nfc.tech.MifareClassic;
-import android.os.Bundle;
-import android.util.Log;
+import android.app.*;
+import android.content.*;
+import android.nfc.*;
+import android.nfc.tech.*;
+import android.os.*;
 import android.view.*;
 import android.widget.*;
 
@@ -20,8 +16,8 @@ public class MainActivity extends Activity
 	private TextView textViewBalance;
 	private EditText editTextBalance;
 	private Button buttonWrite;
-	private NfcAdapter mNfcAdapter;
-	private PendingIntent mPendingIntent;
+	private NfcAdapter nfcAdapter;
+	private PendingIntent pendingIntent;
 	private Tag tag;
 	private final byte[] keyA=new byte[]{0x01,0x02,0x03,0x04,0x05,0x06};
 	private final int sectorIndex=2;
@@ -34,74 +30,100 @@ public class MainActivity extends Activity
 		textViewBalance=findViewById(R.id.textViewBalance);
 		editTextBalance=findViewById(R.id.editTextBalance);
 		buttonWrite=findViewById(R.id.buttonWrite);
-		mNfcAdapter=NfcAdapter.getDefaultAdapter(this);
-		if(mNfcAdapter==null)
+		nfcAdapter=NfcAdapter.getDefaultAdapter(this);
+		if(nfcAdapter==null)
 		{
-			Toast.makeText(this,"设备不支持NFC！",Toast.LENGTH_LONG).show();
-			finish();
-			return;
+			Toast.makeText(this,"NFC is not supported by your device!",Toast.LENGTH_LONG).show();
+			//finish();
+			//return;
 		}
-		if(!mNfcAdapter.isEnabled())
+		if(!nfcAdapter.isEnabled())
 		{
-			Toast.makeText(this,"请在系统设置中先启用NFC功能！",Toast.LENGTH_LONG).show();
-			finish();
-			return;
+			Toast.makeText(this,"Please enable NFC first!",Toast.LENGTH_LONG).show();
+			//finish();
+			//return;
 		}
 		buttonWrite.setOnClickListener(new View.OnClickListener()
-       {
-           @Override
-           public void onClick(View v)
-           {
-               if(writeTag(tag,MainActivity.this.generateData((int)(Double.parseDouble(editTextBalance.getText().toString())*100))))
-               {
-               	    readTag(tag);
-               }
-           }
-       });
-		mPendingIntent=PendingIntent.getActivity(this,0,new Intent(this,getClass()),0);
+        {
+	        @Override
+	        public void onClick(View v)
+	        {
+	        	if(!checkBox.isChecked())
+		        {
+			        Toast.makeText(MainActivity.this,"Please check the ToS!",Toast.LENGTH_LONG).show();
+			        return;
+		        }
+	        	try
+		        {
+			        int balance=(int)Math.round(Double.parseDouble(editTextBalance.getText().toString())*100);
+			        if(balance<0||balance>0x7FFFF)
+				        Toast.makeText(MainActivity.this,"Please input a correct value!",Toast.LENGTH_LONG).show();
+			        else if(writeTag(tag,MainActivity.this.generateData(balance)))
+			        {
+				        readTag(tag);
+				        Toast.makeText(MainActivity.this,"Successfully Written!",Toast.LENGTH_LONG).show();
+			        }
+			        else
+				        Toast.makeText(MainActivity.this,"Failed to write!",Toast.LENGTH_LONG).show();
+		        }
+	        	catch(Exception e)
+		        {
+			        Toast.makeText(MainActivity.this,"Please input a correct value!",Toast.LENGTH_LONG).show();
+		        }
+	        }
+        });
+		pendingIntent=PendingIntent.getActivity(this,0,new Intent(this,getClass()),0);
 	}
 
 	@Override
 	public void onResume()
 	{
 		super.onResume();
-		if(mNfcAdapter!=null)
-			mNfcAdapter.enableForegroundDispatch(this,mPendingIntent,null,null);
+		if(nfcAdapter!=null)
+			nfcAdapter.enableForegroundDispatch(this,pendingIntent,null,null);
 	}
 
 	@Override
 	public void onNewIntent(Intent intent)
 	{
-
-		tag=intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-		String[] techList=tag.getTechList();
-		boolean haveMifareUltralight=false;
-		for(String tech : techList)
+		if(!checkBox.isChecked())
 		{
-			if(tech.contains("MifareClassic"))
-			{
-				haveMifareUltralight=true;
-				break;
-			}
-		}
-		if(!haveMifareUltralight)
-		{
-			Toast.makeText(this,"不支持MifareClassic",Toast.LENGTH_LONG).show();
+			Toast.makeText(this,"Please check the ToS!",Toast.LENGTH_LONG).show();
 			return;
 		}
-		Integer data=readTag(tag);
-		if(data!=null)
-			textViewBalance.setText(String.format(Locale.US,"%.2f",((double)data)/100));
-		else
-			textViewBalance.setText("");
+		try
+		{
+			tag=intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+			String[] techList=tag.getTechList();
+			boolean haveMifareUltralight=false;
+			for(String tech : techList)
+			{
+				if(tech.contains("MifareClassic"))
+				{
+					haveMifareUltralight=true;
+					break;
+				}
+			}
+			if(!haveMifareUltralight)
+			{
+				Toast.makeText(this,"MifareClassic is not supported by your device!",Toast.LENGTH_LONG).show();
+				return;
+			}
+			if(readTag(tag)!=null)
+				Toast.makeText(this,"Successfully Read!",Toast.LENGTH_LONG).show();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
 	}
 
 	@Override
 	public void onPause()
 	{
 		super.onPause();
-		if(mNfcAdapter!=null)
-			mNfcAdapter.disableForegroundDispatch(this);
+		if(nfcAdapter!=null)
+			nfcAdapter.disableForegroundDispatch(this);
 	}
 
 	private byte[] generateData(int balance)
@@ -122,21 +144,21 @@ public class MainActivity extends Activity
 
 	private boolean writeTag(Tag tag,byte[] data)
 	{
-		MifareClassic mfc=MifareClassic.get(tag);
+		MifareClassic mfc=null;
 		try
 		{
+			mfc=MifareClassic.get(tag);
 			mfc.connect();
 			if(mfc.authenticateSectorWithKeyA(sectorIndex,keyA))
 			{
 				int blockIndex=mfc.sectorToBlock(sectorIndex);
-				// the last block of the sector is used for KeyA and KeyB cannot be overwritted
 				mfc.writeBlock(blockIndex,data);
 				mfc.writeBlock(++blockIndex,data);
 				mfc.close();
 				return true;
 			}
 		}
-		catch(IOException e)
+		catch(Exception e)
 		{
 			e.printStackTrace();
 		}
@@ -146,7 +168,7 @@ public class MainActivity extends Activity
 			{
 				mfc.close();
 			}
-			catch(IOException e)
+			catch(Exception e)
 			{
 				e.printStackTrace();
 			}
@@ -157,16 +179,16 @@ public class MainActivity extends Activity
 	private Integer readTag(Tag tag)
 	{
 		MifareClassic mfc=MifareClassic.get(tag);
-		//读取TAG
+		//Read TAG
 		try
 		{
-			//Enable I/O operations to the tag from this TagTechnology object.
+			//Enable I/O operations to the tag from this TagTechnology object
 			mfc.connect();
-			//Authenticate a sector with key A.
 			int balance=0;
+			//Authenticate a sector with key A
 			if(mfc.authenticateSectorWithKeyA(sectorIndex,keyA))
 			{
-				// 读取扇区中的块
+				//Read block
 				byte[] data=mfc.readBlock(mfc.sectorToBlock(sectorIndex));
 				for(int i=3;i>=0;i--)
 				{
@@ -174,6 +196,7 @@ public class MainActivity extends Activity
 					balance|=data[i]&0xFF;
 				}
 			}
+			textViewBalance.setText(String.format(Locale.US,"%.2f",((double)balance)/100));
 			return balance;
 		}
 		catch(Exception e)
@@ -194,6 +217,7 @@ public class MainActivity extends Activity
 				}
 			}
 		}
+		textViewBalance.setText("");
 		return null;
 	}
 }
