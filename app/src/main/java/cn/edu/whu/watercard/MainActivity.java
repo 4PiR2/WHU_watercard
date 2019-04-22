@@ -1,4 +1,4 @@
-package net.happygod.watercard;
+package cn.edu.whu.watercard;
 
 import java.io.*;
 import java.util.*;
@@ -39,7 +39,7 @@ public class MainActivity extends Activity
 		}
 		if(!nfcAdapter.isEnabled())
 		{
-			Toast.makeText(this,"Please enable NFC first!",Toast.LENGTH_LONG).show();
+			Toast.makeText(this,"Please enable NFC!",Toast.LENGTH_LONG).show();
 			//finish();
 			//return;
 		}
@@ -50,14 +50,14 @@ public class MainActivity extends Activity
 	        {
 	        	if(!checkBox.isChecked())
 		        {
-			        Toast.makeText(MainActivity.this,"Please check the ToS!",Toast.LENGTH_LONG).show();
+			        Toast.makeText(MainActivity.this,"Please agree the ToS!",Toast.LENGTH_LONG).show();
 			        return;
 		        }
 	        	try
 		        {
 			        int balance=(int)Math.round(Double.parseDouble(editTextBalance.getText().toString())*100);
 			        if(balance<0||balance>0x7FFFF)
-				        Toast.makeText(MainActivity.this,"Please input a correct value!",Toast.LENGTH_LONG).show();
+				        Toast.makeText(MainActivity.this,"Please input a valid value!",Toast.LENGTH_LONG).show();
 			        else if(writeTag(tag,MainActivity.this.generateData(balance)))
 			        {
 				        readTag(tag);
@@ -68,7 +68,7 @@ public class MainActivity extends Activity
 		        }
 	        	catch(Exception e)
 		        {
-			        Toast.makeText(MainActivity.this,"Please input a correct value!",Toast.LENGTH_LONG).show();
+			        Toast.makeText(MainActivity.this,"Please input a valid value!",Toast.LENGTH_LONG).show();
 		        }
 	        }
         });
@@ -88,7 +88,7 @@ public class MainActivity extends Activity
 	{
 		if(!checkBox.isChecked())
 		{
-			Toast.makeText(this,"Please check the ToS!",Toast.LENGTH_LONG).show();
+			Toast.makeText(this,"Please agree the ToS!",Toast.LENGTH_LONG).show();
 			return;
 		}
 		try
